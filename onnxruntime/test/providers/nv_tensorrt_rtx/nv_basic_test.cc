@@ -2,9 +2,6 @@
 // Licensed under the MIT License.
 #include "core/graph/onnx_protobuf.h"
 #include "core/session/inference_session.h"
-#include "test/providers/provider_test_utils.h"
-#include "test/unittest_util/framework_test_utils.h"
-#include "test/util/include/default_providers.h"
 
 #include "test/util/include/scoped_env_vars.h"
 #include "test/common/trt_op_test_utils.h"
@@ -47,6 +44,10 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReload) {
   std::vector<int> dims = {1, 3, 2};
 
   CreateBaseModel(model_name, graph_name, dims);
+
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   // AOT time
   {
     auto start = std::chrono::high_resolution_clock::now();
@@ -54,7 +55,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReload) {
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     so.AddConfigEntry(kOrtSessionOptionEpContextFilePath, model_name_ctx_str.c_str());
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation AOT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -69,7 +70,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReload) {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation JIT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -89,6 +90,9 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDynamic) {
 
   CreateBaseModel(model_name, graph_name, dims);
 
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   // AOT time
   {
     auto start = std::chrono::high_resolution_clock::now();
@@ -96,7 +100,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDynamic) {
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     so.AddConfigEntry(kOrtSessionOptionEpContextFilePath, model_name_ctx_str.c_str());
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation AOT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -111,7 +115,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDynamic) {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation JIT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -134,6 +138,9 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDataDynamic) {
 
   CreateBaseModel(model_name, graph_name, dims);
 
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   // AOT time
   {
     auto start = std::chrono::high_resolution_clock::now();
@@ -141,7 +148,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDataDynamic) {
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     so.AddConfigEntry(kOrtSessionOptionEpContextFilePath, model_name_ctx_str.c_str());
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation AOT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -156,7 +163,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDataDynamic) {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
     std::cout << "Session creation JIT: " << std::chrono::duration_cast<std::chrono::milliseconds>((stop - start)).count() << " ms" << std::endl;
@@ -208,11 +215,14 @@ TEST_P(TypeTests, IOTypes) {
 
   CreateBaseModel(model_name, graph_name, dims, false, GetParam());
 
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   // AOT time
   {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
 
     auto io_binding = generate_io_binding(session_object);
@@ -221,6 +231,9 @@ TEST_P(TypeTests, IOTypes) {
 }
 
 TEST(NvExecutionProviderTest, TestSessionOutputs) {
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   /*
    * Model #1:
    *
@@ -232,7 +245,10 @@ TEST(NvExecutionProviderTest, TestSessionOutputs) {
    */
   {
     Ort::SessionOptions session_options;
-    session_options.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(session_options, *ort_env);
+    // topk_and_multiple_graph_outputs.onnx contains input with dynamic dimension N
+    // setting override to avoid shape mismatch
+    session_options.AddFreeDimensionOverrideByName("N", 300);
 
     auto model_path = ORT_TSTR("testdata/topk_and_multiple_graph_outputs.onnx");
     Ort::Session session(*ort_env, model_path, session_options);
@@ -252,7 +268,7 @@ TEST(NvExecutionProviderTest, TestSessionOutputs) {
    */
   {
     Ort::SessionOptions session_options;
-    session_options.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {});
+    Utils::AppendNvTrtRtxToSessionOptions(session_options, *ort_env);
 
     auto model_path = ORT_TSTR("testdata/node_output_not_used.onnx");
     Ort::Session session(*ort_env, model_path, session_options);
@@ -474,19 +490,13 @@ TEST(NvExecutionProviderTest, FP8CustomOpModel) {
   // Verify the model file was created
   ASSERT_TRUE(std::filesystem::exists(model_name));
 
-  // Create session and register execution provider explicitly
-  // This ensures custom ops are registered before model is loaded
-  SessionOptions so;
-  so.session_logid = "NvExecutionProviderTest.FP8CustomOpModel";
-  InferenceSession session_object{so, GetEnvironment()};
+  // Register the EP library with the environment (decides plugin vs provider bridge)
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
 
-  // Register TRTRTX EP - this will register custom ops
-  std::unique_ptr<IExecutionProvider> execution_provider = DefaultNvTensorRTRTXExecutionProvider();
-  ASSERT_STATUS_OK(session_object.RegisterExecutionProvider(std::move(execution_provider)));
-
-  // Load and initialize model
-  ASSERT_STATUS_OK(session_object.Load(model_name));
-  ASSERT_STATUS_OK(session_object.Initialize());
+  Ort::SessionOptions so;
+  Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
+  Ort::Session session_object(*ort_env, model_name.c_str(), so);
 
   // Create input data (FP16, shape [4, 64])
   std::vector<MLFloat16> input_data(4 * 64);
@@ -496,36 +506,33 @@ TEST(NvExecutionProviderTest, FP8CustomOpModel) {
 
   // Create input tensor
   std::vector<int64_t> input_shape = {4, 64};
-  OrtValue input_tensor;
-  Tensor::InitOrtValue(DataTypeImpl::GetType<MLFloat16>(), TensorShape(input_shape),
-                       input_data.data(), OrtMemoryInfo(CPU, OrtAllocatorType::OrtDeviceAllocator),
-                       input_tensor);
-
-  // Prepare feeds
-  NameMLValMap feeds;
-  feeds.insert(std::make_pair("X", input_tensor));
-
-  // Prepare outputs
-  std::vector<std::string> output_names;
-  output_names.push_back("Y");
+  Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeDefault);
+  Ort::Value input_tensor = Ort::Value::CreateTensor(
+      memory_info,
+      static_cast<void*>(input_data.data()),
+      input_data.size() * sizeof(MLFloat16),
+      input_shape.data(),
+      input_shape.size(),
+      ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
 
   // Run inference
-  std::vector<OrtValue> fetches;
-  RunOptions run_options;
-  ASSERT_STATUS_OK(session_object.Run(run_options, feeds, output_names, &fetches));
+  const char* input_names[] = {"X"};
+  const char* output_names[] = {"Y"};
+  Ort::RunOptions run_options;
+  auto output_tensors = session_object.Run(run_options, input_names, &input_tensor, 1, output_names, 1);
 
   // Verify output tensor is valid
-  ASSERT_EQ(fetches.size(), 1u);
-  ASSERT_TRUE(fetches[0].IsTensor());
+  ASSERT_EQ(output_tensors.size(), 1u);
+  ASSERT_TRUE(output_tensors[0].IsTensor());
 
-  const auto& output_tensor = fetches[0].Get<Tensor>();
-  auto output_shape = output_tensor.Shape();
-  ASSERT_EQ(output_shape.NumDimensions(), 2u);
+  auto type_info = output_tensors[0].GetTensorTypeAndShapeInfo();
+  auto output_shape = type_info.GetShape();
+  ASSERT_EQ(output_shape.size(), 2u);
   ASSERT_EQ(output_shape[0], 4);
   ASSERT_EQ(output_shape[1], 64);
 
   // Verify output is FLOAT16
-  ASSERT_TRUE(output_tensor.IsDataType<MLFloat16>());
+  ASSERT_EQ(type_info.GetElementType(), ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
 
   LOGS_DEFAULT(INFO) << "[NvExecutionProviderTest] TRT FP8 custom ops model run completed successfully";
 }
@@ -545,19 +552,13 @@ TEST(NvExecutionProviderTest, FP4CustomOpModel) {
   // Verify the model file was created
   ASSERT_TRUE(std::filesystem::exists(model_name));
 
-  // Create session and register execution provider explicitly
-  // This ensures custom ops are registered before model is loaded
-  SessionOptions so;
-  so.session_logid = "NvExecutionProviderTest.FP4CustomOpModel";
-  InferenceSession session_object{so, GetEnvironment()};
+  // Register the EP library with the environment (decides plugin vs provider bridge)
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
 
-  // Register TRTRTX EP - this will register custom ops
-  std::unique_ptr<IExecutionProvider> execution_provider = DefaultNvTensorRTRTXExecutionProvider();
-  ASSERT_STATUS_OK(session_object.RegisterExecutionProvider(std::move(execution_provider)));
-
-  // Load and initialize model
-  ASSERT_STATUS_OK(session_object.Load(model_name));
-  ASSERT_STATUS_OK(session_object.Initialize());
+  Ort::SessionOptions so;
+  Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
+  Ort::Session session_object(*ort_env, model_name.c_str(), so);
 
   // Create input data (FP16, shape [64, 64])
   std::vector<MLFloat16> input_data(64 * 64);
@@ -567,36 +568,33 @@ TEST(NvExecutionProviderTest, FP4CustomOpModel) {
 
   // Create input tensor
   std::vector<int64_t> input_shape = {64, 64};
-  OrtValue input_tensor;
-  Tensor::InitOrtValue(DataTypeImpl::GetType<MLFloat16>(), TensorShape(input_shape),
-                       input_data.data(), OrtMemoryInfo(CPU, OrtAllocatorType::OrtDeviceAllocator),
-                       input_tensor);
-
-  // Prepare feeds
-  NameMLValMap feeds;
-  feeds.insert(std::make_pair("X", input_tensor));
-
-  // Prepare outputs
-  std::vector<std::string> output_names;
-  output_names.push_back("X_dequantized");
+  Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeDefault);
+  Ort::Value input_tensor = Ort::Value::CreateTensor(
+      memory_info,
+      static_cast<void*>(input_data.data()),
+      input_data.size() * sizeof(MLFloat16),
+      input_shape.data(),
+      input_shape.size(),
+      ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
 
   // Run inference
-  std::vector<OrtValue> fetches;
-  RunOptions run_options;
-  ASSERT_STATUS_OK(session_object.Run(run_options, feeds, output_names, &fetches));
+  const char* input_names[] = {"X"};
+  const char* output_names[] = {"X_dequantized"};
+  Ort::RunOptions run_options;
+  auto output_tensors = session_object.Run(run_options, input_names, &input_tensor, 1, output_names, 1);
 
   // Verify output tensor is valid
-  ASSERT_EQ(fetches.size(), 1u);
-  ASSERT_TRUE(fetches[0].IsTensor());
+  ASSERT_EQ(output_tensors.size(), 1u);
+  ASSERT_TRUE(output_tensors[0].IsTensor());
 
-  const auto& output_tensor = fetches[0].Get<Tensor>();
-  auto output_shape = output_tensor.Shape();
-  ASSERT_EQ(output_shape.NumDimensions(), 2u);
+  auto type_info = output_tensors[0].GetTensorTypeAndShapeInfo();
+  auto output_shape = type_info.GetShape();
+  ASSERT_EQ(output_shape.size(), 2u);
   ASSERT_EQ(output_shape[0], 64);
   ASSERT_EQ(output_shape[1], 64);
 
   // Verify output is FLOAT16
-  ASSERT_TRUE(output_tensor.IsDataType<MLFloat16>());
+  ASSERT_EQ(type_info.GetElementType(), ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16);
 
   LOGS_DEFAULT(INFO) << "[NvExecutionProviderTest] TRT FP4 dynamic quantize model run completed successfully";
 }

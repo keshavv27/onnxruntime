@@ -35,13 +35,17 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
     std::filesystem::remove_all(runtime_cache_name);
   }
   CreateBaseModel(model_name, graph_name, dims);
+
+  RegisteredEpDeviceUniquePtr ep;
+  Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, ep);
+
   // AOT time
   {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     so.AddConfigEntry(kOrtSessionOptionEpContextFilePath, model_name_ctx_str.c_str());
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
 
     auto io_binding = generate_io_binding(session_object);
@@ -55,7 +59,7 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
   {
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
   }
   ASSERT_TRUE(1 == countFilesInDirectory(runtime_cache_name));
@@ -68,7 +72,7 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
     if (std::filesystem::exists(new_cache_name)) {
       std::filesystem::remove_all(new_cache_name);
     }
-    so.AppendExecutionProvider(kNvTensorRTRTXExecutionProvider, {{"nv_runtime_cache_path", new_cache_name.c_str()}});
+    Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env, {{"nv_runtime_cache_path", new_cache_name.c_str()}});
     {
       Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     }

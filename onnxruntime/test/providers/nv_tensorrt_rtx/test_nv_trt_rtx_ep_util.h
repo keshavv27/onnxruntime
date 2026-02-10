@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <codecvt>
 
 #include <gtest/gtest.h>
@@ -45,6 +46,14 @@ struct Utils {
   // Register the NV TensorRT RTX EP library, get the OrtEpDevice for it, and return a unique pointer that will
   // automatically unregister the EP library.
   static void RegisterAndGetNvTensorRtRtxEp(Ort::Env& env, RegisteredEpDeviceUniquePtr& nv_tensorrt_rtx_ep);
+
+  // Append the NV TensorRT RTX EP to session options using the V2 API.
+  // The EP library must already be registered with the environment (via RegisterAndGetNvTensorRtRtxEp).
+  // The environment decides whether to use provider bridge or plugin based on the library capabilities.
+  static void AppendNvTrtRtxToSessionOptions(
+      Ort::SessionOptions& so,
+      Ort::Env& env,
+      const std::unordered_map<std::string, std::string>& options = {});
 };
 
 [[maybe_unused]] static std::string PathToUTF8(const PathString& path) {

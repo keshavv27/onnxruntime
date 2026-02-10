@@ -48,17 +48,57 @@ void Utils::GetEp(Ort::Env& env, const std::string& ep_name, const OrtEpDevice*&
 
 void Utils::RegisterAndGetNvTensorRtRtxEp(Ort::Env& env, RegisteredEpDeviceUniquePtr& registered_ep) {
   const OrtApi& c_api = Ort::GetApi();
-  // this should load the library and create OrtEpDevice
-  ASSERT_ORTSTATUS_OK(c_api.RegisterExecutionProviderLibrary(env,
-                                                             nv_tensorrt_rtx_ep_info.registration_name.c_str(),
-                                                             nv_tensorrt_rtx_ep_info.library_path.c_str()));
+  // // this should load the library and create OrtEpDevice
+  // ASSERT_ORTSTATUS_OK(c_api.RegisterExecutionProviderLibrary(env,
+  //                                                            nv_tensorrt_rtx_ep_info.registration_name.c_str(),
+  //                                                            nv_tensorrt_rtx_ep_info.library_path.c_str()));
+  // const OrtEpDevice* nv_tensorrt_rtx_ep = nullptr;
+  // GetEp(env, nv_tensorrt_rtx_ep_info.registration_name, nv_tensorrt_rtx_ep);
+
+  // Check if the EP is already registered (e.g., from a previous test in the same process).
+  // Environment::RegisterExecutionProviderLibrary fails if called twice with the same name,
+  // because re-loading would duplicate devices, leak factories, and double-load the library.
   const OrtEpDevice* nv_tensorrt_rtx_ep = nullptr;
   GetEp(env, nv_tensorrt_rtx_ep_info.registration_name, nv_tensorrt_rtx_ep);
-  ASSERT_NE(nv_tensorrt_rtx_ep, nullptr);
 
-  registered_ep = RegisteredEpDeviceUniquePtr(nv_tensorrt_rtx_ep, [&env, c_api](const OrtEpDevice* /*ep*/) {
+  bool did_register = false;
+  if (nv_tensorrt_rtx_ep == nullptr) {
+    // Not yet registered - load the library and create OrtEpDevice.
+    // The environment decides whether to use plugin or provider bridge based on the library's exports.
+    ASSERT_ORTSTATUS_OK(c_api.RegisterExecutionProviderLibrary(env,
+                                                               nv_tensorrt_rtx_ep_info.registration_name.c_str(),
+                                                               nv_tensorrt_rtx_ep_info.library_path.c_str()));
+    GetEp(env, nv_tensorrt_rtx_ep_info.registration_name, nv_tensorrt_rtx_ep);
+    did_register = true;
+  }
+  ASSERT_NE(nv_tensorrt_rtx_ep, nullptr);
+  if (did_register) {
+    registered_ep = RegisteredEpDeviceUniquePtr(nv_tensorrt_rtx_ep, [&env, c_api](const OrtEpDevice* /*ep*/) {
     c_api.UnregisterExecutionProviderLibrary(env, nv_tensorrt_rtx_ep_info.registration_name.c_str());
   });
+  } else {
+    registered_ep = RegisteredEpDeviceUniquePtr(nv_tensorrt_rtx_ep, [](const OrtEpDevice* /*ep*/) {});
+  }
+
+}
+
+void Utils::AppendNvTrtRtxToSessionOptions(
+    Ort::SessionOptions& so,
+    Ort::Env& env,
+    const std::unordered_map<std::string, std::string>& options) {
+  auto ep_devices = env.GetEpDevices();
+  Ort::ConstEpDevice selected_device;
+  bool found = false;
+  for (auto& device : ep_devices) {
+    if (!std::strcmp(device.EpName(), kNvTensorRTRTXExecutionProvider)) {
+      selected_device = device;
+      found = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(found) << "NvTensorRTRTX EP device not found. Is the EP library registered with the environment?";
+  std::unordered_map<std::string, std::string> option_map(options);
+  so.AppendExecutionProvider_V2(env, {selected_device}, option_map);
 }
 
 void CreateBaseModel(const PathString& model_name,

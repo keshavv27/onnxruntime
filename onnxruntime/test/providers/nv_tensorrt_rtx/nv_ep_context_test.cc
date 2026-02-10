@@ -17,14 +17,15 @@ RegisteredEpDeviceUniquePtr AppendTrtEtxEP(Ort::SessionOptions& session_options,
   /// Since this test runs after other tests that use registration interface this test has to use it as well
   /// windows as otherwise the kernel registry inside the EP will not be populated. The legacy APis ony call the initialize once.
   Utils::RegisterAndGetNvTensorRtRtxEp(*ort_env, nv_tensorrt_rtx_ep);
-  auto ep_devices = ort_env->GetEpDevices();
-  Ort::ConstEpDevice selected_device;
-  for (auto& device : ep_devices) {
-    if (!std::strcmp(device.EpName(), kNvTensorRTRTXExecutionProvider)) {
-      selected_device = device;
-    }
-  }
-  session_options.AppendExecutionProvider_V2(*ort_env, {selected_device}, option_map);
+  // auto ep_devices = ort_env->GetEpDevices();
+  // Ort::ConstEpDevice selected_device;
+  // for (auto& device : ep_devices) {
+  //   if (!std::strcmp(device.EpName(), kNvTensorRTRTXExecutionProvider)) {
+  //     selected_device = device;
+  //   }
+  // }
+  // session_options.AppendExecutionProvider_V2(*ort_env, {selected_device}, option_map);
+  Utils::AppendNvTrtRtxToSessionOptions(session_options, *ort_env, option_map);
   return nv_tensorrt_rtx_ep;
 }
 
