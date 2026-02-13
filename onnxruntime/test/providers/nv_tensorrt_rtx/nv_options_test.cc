@@ -30,7 +30,7 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
   clearFileIfExists(model_name_ctx);
   std::string graph_name = "test";
   std::vector<int> dims = {1, 3, 2};
-  std::string runtime_cache_name = "./runtime_cache/";
+  std::string runtime_cache_name = "./runtime_cache";
   if (std::filesystem::exists(runtime_cache_name)) {
     std::filesystem::remove_all(runtime_cache_name);
   }
@@ -41,11 +41,13 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
 
   // AOT time
   {
+    std::cout << "\naot phase" <<std::endl;
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     so.AddConfigEntry(kOrtSessionOptionEpContextFilePath, model_name_ctx_str.c_str());
     Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});
+    std::cout << "\n ep appended\n";
     Ort::Session session_object(*ort_env, model_name.c_str(), so);
 
     auto io_binding = generate_io_binding(session_object);
@@ -57,6 +59,7 @@ TEST(NvExecutionProviderTest, RuntimeCaching) {
 
   // use existing cache
   {
+    std::cout << "\njit phase" <<std::endl;
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
     Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env, {{"nv_runtime_cache_path", runtime_cache_name.c_str()}});

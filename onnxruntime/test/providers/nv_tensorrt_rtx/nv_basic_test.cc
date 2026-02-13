@@ -69,7 +69,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReload) {
     auto start = std::chrono::high_resolution_clock::now();
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
-    so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
+    //so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
@@ -114,7 +114,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDynamic) {
     auto start = std::chrono::high_resolution_clock::now();
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
-    so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
+    //so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();
@@ -162,7 +162,7 @@ TEST(NvExecutionProviderTest, ContextEmbedAndReloadDataDynamic) {
     auto start = std::chrono::high_resolution_clock::now();
     Ort::SessionOptions so;
     Ort::RunOptions run_options;
-    so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
+    //so.AddConfigEntry(kOrtSessionOptionEpContextEnable, "1");
     Utils::AppendNvTrtRtxToSessionOptions(so, *ort_env);
     Ort::Session session_object(*ort_env, model_name_ctx.c_str(), so);
     auto stop = std::chrono::high_resolution_clock::now();

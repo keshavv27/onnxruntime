@@ -97,8 +97,8 @@ void Utils::AppendNvTrtRtxToSessionOptions(
     }
   }
   ASSERT_TRUE(found) << "NvTensorRTRTX EP device not found. Is the EP library registered with the environment?";
-  std::unordered_map<std::string, std::string> option_map(options);
-  so.AppendExecutionProvider_V2(env, {selected_device}, option_map);
+  //std::unordered_map<std::string, std::string> option_map(options);
+  so.AppendExecutionProvider_V2(env, {selected_device}, options);
 }
 
 void CreateBaseModel(const PathString& model_name,
